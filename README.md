@@ -90,3 +90,11 @@ This creates `spellcasters-bot-v2.zip` containing all source code, configs, and 
 
 Please refer to [DEPLOYMENT.md](DEPLOYMENT.md) for the official deployment guide.
 This project includes a `deploy.sh` script for automated updates on Google Cloud e2-micro instances. It automatically configures `NODE_ENV=production` for optimal performance.
+
+## 🌐 Part of the Spellcasters Ecosystem
+
+- **[Spellcasters Community API](https://github.com/TerribleTurtle/spellcasters-community-api)** — The shared data source (GitHub Pages)
+- **[SpellcastersDB](https://github.com/TerribleTurtle/spellcastersdb)** — The public database & deckbuilder
+- **[The Grimoire](https://github.com/TerribleTurtle/spellcasters-manager)** — Data management & patch publishing
+
+> All tools consume the same [Community API v2](https://terribleturtle.github.io/spellcasters-community-api/api/v2/).
