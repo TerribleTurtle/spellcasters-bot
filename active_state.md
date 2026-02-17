@@ -1,7 +1,7 @@
 # Project Status
 
-- **Current Focus:** Deployment
-- **Status:** All checks passed. Version bumped to 2.1.0. Committing and pushing.
+- **Current Focus:** Deployed
+- **Status:** All checks passed. v2.1.0 packaged and pushed to GitHub (`TerribleTurtle/spellcasters-bot`).
 - **Target:** Release v2.1.0
 
 ## Context
