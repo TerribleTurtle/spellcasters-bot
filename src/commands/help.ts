@@ -1,9 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 
 export const command = {
-  data: new SlashCommandBuilder()
-    .setName('help')
-    .setDescription('Show all available commands'),
+  data: new SlashCommandBuilder().setName('help').setDescription('Show all available commands'),
   async execute(interaction: ChatInputCommandInteraction) {
     const embed = new EmbedBuilder()
       .setTitle('📖 Spellcasters Bot — Commands')
@@ -15,12 +13,9 @@ export const command = {
           value: 'Find any entity by name (fuzzy match).\n*Example:* `/search Fire Ball`',
         },
         {
-          name: '🦸 /hero <name>',
-          value: 'Detailed hero card with all abilities.\n*Example:* `/hero Swamp Witch`',
-        },
-        {
           name: '📋 /list <type> [school] [rank] [sort]',
-          value: 'Browse entities with filters. Sort by Name (default) or Rank.\n*Example:* `/list units War II`',
+          value:
+            'Browse entities with filters. Sort by Name (default) or Rank.\n*Example:* `/list units War II`',
         },
         {
           name: '⚔️ /compare <first> <second>',
@@ -31,20 +26,16 @@ export const command = {
           value: 'Show a random entity. Optionally filter by type.\n*Example:* `/random spell`',
         },
         {
+          name: '📜 /patch [version]',
+          value: 'Show patch notes.\n*Example:* `/patch` (latest) or `/patch 2.0.1`',
+        },
+        {
           name: 'ℹ️ /about',
-          value: 'Game info, database stats, and links.',
+          value: 'Game info, bot stats, and invite link.',
         },
         {
-          name: '🏓 /ping',
-          value: 'Check bot latency and API responsiveness.',
-        },
-        {
-          name: '📩 /invite',
-          value: 'Get a link to add this bot to your server.',
-        },
-        {
-          name: '📊 /stats',
-          value: 'Show bot usage statistics and database info.',
+          name: '📖 /help',
+          value: 'Show this command list.',
         },
       )
       .setFooter({ text: 'Tip: All name fields support autocomplete — just start typing!' });

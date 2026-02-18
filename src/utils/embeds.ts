@@ -4,6 +4,12 @@ import { Hero, Unit, Spell, Titan, Consumable } from '../types';
 const WIKI_BASE_URL = 'https://www.spellcastersdb.com';
 const IMAGE_BASE_URL = 'https://terribleturtle.github.io/spellcasters-community-api/assets';
 
+/** Safely format a value for an embed field. Returns 'N/A' for null/undefined/empty. */
+const safe = (val: any, suffix = ''): string => {
+  if (val === null || val === undefined || val === '') return 'N/A';
+  return `${val}${suffix}`;
+};
+
 const getEntityId = (entity: any): string => {
   return entity.entity_id || entity.name.toLowerCase().replace(/\s+/g, '_');
 };
@@ -62,8 +68,9 @@ const getSchoolColor = (school: string | undefined): number => {
 
 const FOOTER_TEXT = 'View on SpellcastersDB';
 
-const getDifficultyStars = (difficulty: number): string => {
-  return '⭐'.repeat(difficulty);
+const getDifficultyStars = (difficulty: number | undefined): string => {
+  if (!difficulty || difficulty <= 0) return 'N/A';
+  return '⭐'.repeat(Math.min(difficulty, 5));
 };
 
 export const createHeroEmbed = (hero: Hero): EmbedBuilder => {
@@ -78,17 +85,18 @@ export const createHeroEmbed = (hero: Hero): EmbedBuilder => {
   embed.setFooter({ text: `${FOOTER_TEXT} | ID: ${id}` });
 
   embed.addFields(
-    { name: 'Class', value: hero.class, inline: true },
-    { name: 'Category', value: hero.category, inline: true },
-    { name: 'Difficulty', value: getDifficultyStars(hero.difficulty), inline: true },
-    { name: '❤️ Health', value: hero.health.toString(), inline: true },
-    { name: 'Population', value: hero.population.toString(), inline: true },
-    { name: 'Movement', value: hero.movement_type, inline: true },
+    { name: '🎓 Class', value: safe(hero.class), inline: true },
+    { name: '📂 Category', value: safe(hero.category), inline: true },
+    { name: '⭐ Difficulty', value: getDifficultyStars(hero.difficulty), inline: true },
+    { name: '❤️ Health', value: safe(hero.health), inline: true },
+    { name: '👥 Population', value: safe(hero.population), inline: true },
+    { name: '🦶 Movement', value: safe(hero.movement_type), inline: true },
   );
 
   // Primary Ability
-  let primaryDesc = hero.abilities.primary.description;
-  if (hero.abilities.primary.damage) primaryDesc += `\n**Damage:** ${hero.abilities.primary.damage}`;
+  let primaryDesc = hero.abilities.primary.description || 'No description.';
+  if (hero.abilities.primary.damage)
+    primaryDesc += `\n**Damage:** ${hero.abilities.primary.damage}`;
   if (hero.abilities.primary.mechanics) {
     const mechs = [];
     if (hero.abilities.primary.mechanics.pierce) mechs.push('Pierce');
@@ -96,22 +104,29 @@ export const createHeroEmbed = (hero: Hero): EmbedBuilder => {
     if (hero.abilities.primary.mechanics.homing) mechs.push('Homing');
     if (mechs.length) primaryDesc += `\n*Mechanics: ${mechs.join(', ')}*`;
   }
-  embed.addFields({ name: `⚔️ Primary: ${hero.abilities.primary.name}`, value: primaryDesc });
+  embed.addFields({
+    name: `⚔️ Primary: ${hero.abilities.primary.name || 'Unknown'}`,
+    value: primaryDesc,
+  });
 
   // Defense Ability
-  let defenseDesc = hero.abilities.defense.description;
   const def = hero.abilities.defense;
+  let defenseDesc = def.description || 'No description.';
   const defStats = [];
   if (def.charges) defStats.push(`Charges: ${def.charges}`);
   if (def.cooldown) defStats.push(`CD: ${def.cooldown}s`);
   if (def.duration) defStats.push(`Dur: ${def.duration}s`);
   if (defStats.length) defenseDesc += `\n*(${defStats.join(' | ')})*`;
-  embed.addFields({ name: `🛡️ Defense: ${def.name}`, value: defenseDesc });
+  embed.addFields({ name: `🛡️ Defense: ${def.name || 'Unknown'}`, value: defenseDesc });
 
   // Ultimate Ability
-  let ultDesc = hero.abilities.ultimate.description;
-  if (hero.abilities.ultimate.duration) ultDesc += `\n**Duration:** ${hero.abilities.ultimate.duration}s`;
-  embed.addFields({ name: `🔥 Ultimate: ${hero.abilities.ultimate.name}`, value: ultDesc });
+  let ultDesc = hero.abilities.ultimate.description || 'No description.';
+  if (hero.abilities.ultimate.duration)
+    ultDesc += `\n**Duration:** ${hero.abilities.ultimate.duration}s`;
+  embed.addFields({
+    name: `🔥 Ultimate: ${hero.abilities.ultimate.name || 'Unknown'}`,
+    value: ultDesc,
+  });
 
   if (hero.abilities.passive.length > 0) {
     embed.addFields({
@@ -135,37 +150,37 @@ export const createUnitEmbed = (unit: Unit): EmbedBuilder => {
   embed.setFooter({ text: `${FOOTER_TEXT} | ID: ${id}` });
 
   embed.addFields(
-    { name: 'Rank', value: unit.rank, inline: true },
-    { name: 'School', value: unit.magic_school, inline: true },
-    { name: 'Type', value: unit.category, inline: true },
-    { name: '❤️ Health', value: unit.health.toString(), inline: true },
-    { name: '⚔️ Damage', value: unit.damage?.toString() || 'N/A', inline: true },
-    { name: '⚔️ DPS', value: unit.dps?.toString() || 'N/A', inline: true },
+    { name: '🏅 Rank', value: safe(unit.rank), inline: true },
+    { name: '🔮 School', value: safe(unit.magic_school), inline: true },
+    { name: '📂 Type', value: safe(unit.category), inline: true },
+    { name: '❤️ Health', value: safe(unit.health), inline: true },
+    { name: '⚔️ Damage', value: safe(unit.damage), inline: true },
+    { name: '⚔️ DPS', value: safe(unit.dps), inline: true },
   );
 
   if (unit.category !== 'Building') {
     embed.addFields(
-      { name: '🎯 Range', value: unit.range?.toString() || 'N/A', inline: true },
-      { name: '🌪️ Speed', value: unit.movement_speed?.toString() || 'N/A', inline: true },
+      { name: '🎯 Range', value: safe(unit.range), inline: true },
+      { name: '🌪️ Speed', value: safe(unit.movement_speed), inline: true },
     );
   } else {
-     embed.addFields({ name: '🎯 Range', value: unit.range?.toString() || 'N/A', inline: true });
+    embed.addFields({ name: '🎯 Range', value: safe(unit.range), inline: true });
   }
 
-  const cost = [`Charge: ${unit.charges}`, `Recharge: ${unit.recharge_time}s`];
-  if (unit.cast_time) cost.push(`Cast: ${unit.cast_time}s`);
+  const cost = [`Charges: ${safe(unit.charges)}`, `Recharge: ${safe(unit.recharge_time, 's')}`];
+  if (unit.cast_time && unit.cast_time > 0) cost.push(`Cast: ${unit.cast_time}s`);
   embed.addFields({ name: '💎 Cost', value: cost.join(' | '), inline: false });
 
   // Mechanics Summary
   if (unit.mechanics) {
-     const mechs: string[] = [];
-     if (unit.mechanics.spawner) mechs.push('Spawner');
-     if (unit.mechanics.aura) mechs.push('Aura');
-     if (unit.mechanics.damage_modifiers) mechs.push('Damage Modifiers');
-     
-     if (mechs.length > 0) {
-         embed.addFields({ name: '⚙️ Mechanics', value: mechs.join(', '), inline: false });
-     }
+    const mechs: string[] = [];
+    if (unit.mechanics.spawner) mechs.push('Spawner');
+    if (unit.mechanics.aura) mechs.push('Aura');
+    if (unit.mechanics.damage_modifiers) mechs.push('Damage Modifiers');
+
+    if (mechs.length > 0) {
+      embed.addFields({ name: '⚙️ Mechanics', value: mechs.join(', '), inline: false });
+    }
   }
 
   return embed;
@@ -183,24 +198,28 @@ export const createSpellEmbed = (spell: Spell): EmbedBuilder => {
   embed.setFooter({ text: `${FOOTER_TEXT} | ID: ${id}` });
 
   embed.addFields(
-    { name: 'Rank', value: spell.rank, inline: true },
-    { name: 'School', value: spell.magic_school, inline: true },
-    { name: '🎯 Range', value: spell.range?.toString() || 'N/A', inline: true },
+    { name: '🏅 Rank', value: safe(spell.rank), inline: true },
+    { name: '🔮 School', value: safe(spell.magic_school), inline: true },
+    { name: '🎯 Range', value: safe(spell.range), inline: true },
   );
 
-  if (spell.damage) embed.addFields({ name: '⚔️ Damage', value: spell.damage.toString(), inline: true });
-  if (spell.value) embed.addFields({ name: '💚 Value', value: spell.value.toString(), inline: true });
-  if (spell.duration) embed.addFields({ name: '⏳ Duration', value: `${spell.duration}s`, inline: true });
+  if (spell.damage != null)
+    embed.addFields({ name: '⚔️ Damage', value: safe(spell.damage), inline: true });
+  if (spell.value != null)
+    embed.addFields({ name: '💚 Value', value: safe(spell.value), inline: true });
+  if (spell.duration)
+    embed.addFields({ name: '⏳ Duration', value: safe(spell.duration, 's'), inline: true });
 
-  const cost = [`Charge: ${spell.charges}`, `Recharge: ${spell.recharge_time}s`];
-  if (spell.cast_time) cost.push(`Cast: ${spell.cast_time}s`);
+  const cost = [`Charges: ${safe(spell.charges)}`, `Recharge: ${safe(spell.recharge_time, 's')}`];
+  if (spell.cast_time && spell.cast_time > 0) cost.push(`Cast: ${spell.cast_time}s`);
   embed.addFields({ name: '💎 Cost', value: cost.join(' | '), inline: false });
 
   if (spell.mechanics) {
-      const details = [];
-      if (spell.mechanics.waves) details.push(`Waves: ${spell.mechanics.waves}`);
-      if (spell.mechanics.damage_modifiers) details.push('Modifiers');
-      if (details.length) embed.addFields({ name: '⚙️ Mechanics', value: details.join(', '), inline: true });
+    const details = [];
+    if (spell.mechanics.waves) details.push(`Waves: ${spell.mechanics.waves}`);
+    if (spell.mechanics.damage_modifiers) details.push('Modifiers');
+    if (details.length)
+      embed.addFields({ name: '⚙️ Mechanics', value: details.join(', '), inline: true });
   }
 
   return embed;
@@ -218,20 +237,26 @@ export const createTitanEmbed = (titan: Titan): EmbedBuilder => {
   embed.setFooter({ text: `${FOOTER_TEXT} | ID: ${id}` });
 
   embed.addFields(
-    { name: 'Rank', value: titan.rank, inline: true },
-    { name: 'School', value: titan.magic_school, inline: true },
-    { name: '❤️ Health', value: titan.health.toString(), inline: true },
-    { name: '⚔️ Damage', value: titan.damage.toString(), inline: true },
-    { name: '⚔️ DPS', value: titan.dps.toString(), inline: true },
-    { name: '🌪️ Speed', value: titan.movement_speed.toString(), inline: true },
+    { name: '🏅 Rank', value: safe(titan.rank), inline: true },
+    { name: '🔮 School', value: safe(titan.magic_school), inline: true },
+    { name: '❤️ Health', value: safe(titan.health), inline: true },
+    { name: '⚔️ Damage', value: safe(titan.damage), inline: true },
+    { name: '⚔️ DPS', value: safe(titan.dps), inline: true },
+    { name: '🌪️ Speed', value: safe(titan.movement_speed), inline: true },
   );
-  
-  const cost = [`Charge: ${titan.charges}`, `Recharge: ${titan.recharge_time}s`];
-  if (titan.cast_time) cost.push(`Cast: ${titan.cast_time}s`);
+
+  const cost = [`Charges: ${safe(titan.charges)}`, `Recharge: ${safe(titan.recharge_time, 's')}`];
+  if (titan.cast_time && titan.cast_time > 0) cost.push(`Cast: ${titan.cast_time}s`);
   embed.addFields({ name: '💎 Cost', value: cost.join(' | '), inline: false });
 
-  if (titan.passive_health_regen) embed.addFields({ name: '💚 Regen', value: `${titan.passive_health_regen}/s`, inline: true });
-  if (titan.heal_amount) embed.addFields({ name: '💚 Heal Amount', value: titan.heal_amount.toString(), inline: true });
+  if (titan.passive_health_regen)
+    embed.addFields({
+      name: '💚 Regen',
+      value: safe(titan.passive_health_regen, '/s'),
+      inline: true,
+    });
+  if (titan.heal_amount)
+    embed.addFields({ name: '💚 Heal Amount', value: safe(titan.heal_amount), inline: true });
 
   if (titan.mechanics) {
     if (titan.mechanics.aura) {
@@ -241,7 +266,7 @@ export const createTitanEmbed = (titan: Titan): EmbedBuilder => {
       });
     }
     if (titan.mechanics.auto_capture_altars) {
-        embed.addFields({ name: 'Special', value: 'Auto-captures Altars', inline: true });
+      embed.addFields({ name: 'Special', value: 'Auto-captures Altars', inline: true });
     }
   }
   return embed;
@@ -264,8 +289,8 @@ export const createConsumableEmbed = (consumable: Consumable): EmbedBuilder => {
   embed.setFooter({ text: `${FOOTER_TEXT} | ID: ${id}` });
 
   embed.addFields(
-    { name: 'Effect', value: typeLabel, inline: true },
-    { name: 'Value', value: consumable.value.toString(), inline: true },
+    { name: '✨ Effect', value: safe(typeLabel), inline: true },
+    { name: '💎 Value', value: safe(consumable.value), inline: true },
   );
 
   if (consumable.duration) {
@@ -275,8 +300,12 @@ export const createConsumableEmbed = (consumable: Consumable): EmbedBuilder => {
     embed.addFields({ name: '🎯 Target', value: consumable.buff_target, inline: true });
   }
   if (consumable.stack_size && consumable.stack_size > 1) {
-    embed.addFields({ name: '📚 Stack Size', value: consumable.stack_size.toString(), inline: true });
+    embed.addFields({
+      name: '📚 Stack Size',
+      value: consumable.stack_size.toString(),
+      inline: true,
+    });
   }
-  
+
   return embed;
 };

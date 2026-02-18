@@ -48,10 +48,20 @@ if [ -f "$TARGET_DIR/.env.bak" ]; then
 fi
 
 # 7. Build & Install
-echo "🛠️  Building project..."
+# 7. Build & Install
+echo "🛠️  Preparing application..."
 cd "$TARGET_DIR"
-npm install
-npm run build
+
+if [ -d "dist" ] && [ -f "dist/index.js" ]; then
+    echo "📦 Found pre-built artifacts. Installing production dependencies only..."
+    # Faster and uses less memory than npm install
+    npm ci --omit=dev
+else
+    echo "🛠️  No pre-built artifacts found. Building from source..."
+    echo "⚠️  WARNING: This operation is memory intensive."
+    npm install
+    npm run build
+fi
 
 # 8. Register Commands (Specific for v2)
 echo "🤖 Registering Slash Commands..."

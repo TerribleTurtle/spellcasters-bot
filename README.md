@@ -1,21 +1,18 @@
 # Spellcasters Bot (v2)
 
-A Discord bot that provides information about Spellcasters, Spells, and Units from the Spellcasters Community API v2.
+A Discord bot for looking up Heroes, Units, Spells, Titans, and Consumables from the Spellcasters Community API v2.
 
 ## Features
 
 - **Slash Commands**:
   - `/search <query>` - Find any entity (fuzzy match).
-  - `/hero <name>` - Deep dive into hero stats and abilities.
   - `/list <type> [school] [rank]` - Browse entities with filters (paginated).
   - `/compare <first> <second>` - Side-by-side stat comparison.
   - `/random [type]` - Get a random entity card.
-  - `/about` - Game and bot information.
+  - `/patch [version]` - Show patch notes.
+  - `/about` - Game info, bot stats, and invite link.
 
   - `/help` - Show all commands with examples.
-  - `/invite` - Get a link to add the bot to your server.
-  - `/ping` - Check bot latency and API responsiveness.
-  - `/stats` - View bot uptime and usage statistics.
   - `/refresh` - Force refresh database from API (Manage Guild only).
 
 - **Rich Embeds**: Displays full mechanics, difficulty, spell duration, and more.
@@ -41,7 +38,6 @@ A Discord bot that provides information about Spellcasters, Spells, and Units fr
     ```env
     DISCORD_TOKEN=your_discord_bot_token
     DATA_URL=https://terribleturtle.github.io/spellcasters-community-api/api/v2/all_data.json
-    GUILD_ID=your_discord_guild_id
     # Optional: Webhook URL for error logging
     ERROR_WEBHOOK_URL=https://discord.com/api/webhooks/...
     ```

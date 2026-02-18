@@ -8,35 +8,27 @@ const rest = new REST({ version: '10' }).setToken(config.DISCORD_TOKEN!);
 
 (async () => {
   try {
-    console.log(`Started refreshing ${commandsData.length} application (/) commands.`);
-
-    // For guild-based development (instant updates)
-    // await rest.put(
-    // 	Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-    // 	{ body: commandsData },
-    // );
-
-    // For global production (takes up to an hour)
-    // We need the client ID. Since we don't have it in config, we can fetch it or just use 'applicationCommands' relative to the token if we had the ID.
-    // However, Routes.applicationCommands requires application ID.
-    // We can get it from the token... or we can just ask the client to do it on ready.
-    // A better approach for standalone script is to require CLIENT_ID in .env
-
     const user = (await rest.get(Routes.user('@me'))) as any;
     const clientId = user.id;
 
-    console.log(`Deploying to client ID: ${clientId}`);
-
-    if (config.GUILD_ID) {
-        console.log(`Deploying to Guild ID: ${config.GUILD_ID}`);
-        await rest.put(Routes.applicationGuildCommands(clientId, config.GUILD_ID), { body: commandsData });
-    } else {
-        console.log('Deploying globally (might take 1 hour to propagate)...');
-        await rest.put(Routes.applicationCommands(clientId), { body: commandsData });
+    // 1. Clear any stale guild-scoped commands that could mask global ones
+    console.log('Clearing stale guild commands...');
+    const guilds = (await rest.get(Routes.userGuilds())) as any[];
+    for (const guild of guilds) {
+      const guildCmds = (await rest.get(Routes.applicationGuildCommands(clientId, guild.id))) as any[];
+      if (guildCmds.length > 0) {
+        console.log(`  Removing ${guildCmds.length} guild command(s) from: ${guild.name}`);
+        await rest.put(Routes.applicationGuildCommands(clientId, guild.id), { body: [] });
+      }
     }
 
-    console.log('Successfully reloaded application (/) commands.');
+    // 2. Register all commands globally
+    console.log(`Deploying ${commandsData.length} global commands (may take up to 1 hour to propagate)...`);
+    await rest.put(Routes.applicationCommands(clientId), { body: commandsData });
+
+    console.log('✅ Successfully registered all global commands.');
   } catch (error) {
-    console.error(error);
+    console.error('❌ Command registration failed:', error);
+    process.exit(1);
   }
 })();

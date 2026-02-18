@@ -1,31 +1,50 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
-import { fetchData } from '../services/api';
+import { getStats } from '../services/stats';
+import { getAllEntities } from '../services/api';
 
 export const command = {
   data: new SlashCommandBuilder()
     .setName('about')
-    .setDescription('Information about the game and bot'),
+    .setDescription('Game info, bot stats, and invite link'),
   async execute(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
+    const stats = getStats();
+    const entities = getAllEntities();
+    const uptime = formatUptime(stats.uptimeSeconds);
 
-    const data = await fetchData();
-    const config = data.game_config;
-    const build = data.build_info;
+    // Latency
+    const ws = interaction.client.ws.ping;
+
+    // Invitation
+    const clientId = interaction.client.user.id;
+    const inviteUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&permissions=0&scope=bot%20applications.commands`;
 
     const embed = new EmbedBuilder()
-      .setTitle('About Spellcasters')
+      .setTitle('ℹ️ About Spellcasters Bot')
       .setColor(0x9b59b6)
-      .setDescription(config ? `${config.game_name || 'Spellcasters'} — ${config.genre || 'Strategy'}` : 'Spellcasters Community Bot')
-      .addFields(
-        { name: 'Developer', value: config?.developer || 'Terrible Turtle Games', inline: true },
-        { name: 'API Version', value: build.version, inline: true },
-        { name: 'Data Updated', value: build.generated_at, inline: true },
-        { name: 'Database', value: `${data.heroes.length} Heroes · ${data.units.length} Units · ${data.spells.length} Spells · ${data.titans.length} Titans · ${data.consumables.length} Consumables`, inline: false },
-        { name: 'Links', value: '[SpellcastersDB](https://terribleturtle.github.io/spellcasters-db) · [Support Server](https://discord.gg/spellcasters)', inline: false },
-        { name: 'Privacy', value: 'This bot stores no user data. It only reads public game data from the Spellcasters Community API.', inline: false },
+      .setDescription(
+        'The official community bot for **Spellcasters Chronicles**.\nData provided by the [Community API v2](https://terribleturtle.github.io/spellcasters-community-api/).',
       )
-      .setFooter({ text: 'Powered by Spellcasters Community API v2' });
+      .addFields(
+        {
+          name: '🤖 Bot Stats',
+          value: `**Servers:** ${interaction.client.guilds.cache.size}\n**Uptime:** ${uptime}\n**Latency:** ${ws}ms\n**Commands Run:** ${stats.totalCommands}\n**Entities Loaded:** ${entities.length}`,
+          inline: true,
+        },
+        {
+          name: '🔗 Links',
+          value: `• [Invite Bot](${inviteUrl})\n• [SpellcastersDB](https://terribleturtle.github.io/spellcastersdb)\n• [Support Server](https://discord.gg/spellcasters)`,
+          inline: false,
+        },
+      )
+      .setFooter({ text: `v2.1.0 | Powered by Spellcasters API` });
 
-    await interaction.editReply({ embeds: [embed] });
+    await interaction.reply({ embeds: [embed] });
   },
 };
+
+function formatUptime(seconds: number): string {
+  const d = Math.floor(seconds / (3600 * 24));
+  const h = Math.floor((seconds % (3600 * 24)) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return `${d}d ${h}h ${m}m`;
+}

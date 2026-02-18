@@ -3,7 +3,7 @@ import {
   ChatInputCommandInteraction,
   AutocompleteInteraction,
 } from 'discord.js';
-import { fetchData, searchEntities } from '../services/api';
+import { fetchData, searchEntities, findEntityByName } from '../services/api';
 import {
   createHeroEmbed,
   createUnitEmbed,
@@ -42,33 +42,35 @@ export const command = {
   },
   async execute(interaction: ChatInputCommandInteraction) {
     const query = interaction.options.getString('name', true);
-    
+
+    await interaction.deferReply();
+
     // Ensure data is loaded
     await fetchData();
 
-    // 1. Try Exact Match (Optimized O(N) single pass)
-    // We import this from api.ts now to avoid the 5-pass scan in the command itself.
-    const { findEntityByName } = await import('../services/api'); 
+    // 1. Try Exact Match
     const exactMatch = findEntityByName(query);
 
     if (exactMatch) {
       const type = exactMatch.type.toLowerCase();
-      
+
       switch (type) {
         case 'hero':
-          await interaction.reply({ embeds: [createHeroEmbed(exactMatch as Hero)] });
+          await interaction.editReply({ embeds: [createHeroEmbed(exactMatch as Hero)] });
           return;
         case 'unit':
-          await interaction.reply({ embeds: [createUnitEmbed(exactMatch as Unit)] });
+          await interaction.editReply({ embeds: [createUnitEmbed(exactMatch as Unit)] });
           return;
         case 'spell':
-          await interaction.reply({ embeds: [createSpellEmbed(exactMatch as Spell)] });
+          await interaction.editReply({ embeds: [createSpellEmbed(exactMatch as Spell)] });
           return;
         case 'titan':
-          await interaction.reply({ embeds: [createTitanEmbed(exactMatch as Titan)] });
+          await interaction.editReply({ embeds: [createTitanEmbed(exactMatch as Titan)] });
           return;
         case 'consumable':
-          await interaction.reply({ embeds: [createConsumableEmbed(exactMatch as Consumable)] });
+          await interaction.editReply({
+            embeds: [createConsumableEmbed(exactMatch as Consumable)],
+          });
           return;
       }
     }
@@ -78,12 +80,11 @@ export const command = {
     const bestMatch = results[0];
 
     if (bestMatch) {
-      await interaction.reply({
-        content: `Entity "${query}" not found. Did you mean **${bestMatch.name}**?`,
-        ephemeral: true,
+      await interaction.editReply({
+        content: `❌ Entity "${query}" not found. Did you mean **${bestMatch.name}** (${bestMatch.type})?`,
       });
     } else {
-      await interaction.reply({ content: `No entity found matching "${query}".`, ephemeral: true });
+      await interaction.editReply({ content: `❌ No entity found matching "${query}".` });
     }
   },
 };

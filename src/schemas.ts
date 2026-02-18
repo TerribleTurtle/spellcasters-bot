@@ -51,7 +51,7 @@ export const HeroSchema = z.object({
     defense: AbilitySchema,
     ultimate: AbilitySchema,
   }),
-  changelog: z.array(z.any()).optional(),
+
   description: z.string().optional(),
   last_modified: z.string().optional(),
 });
@@ -65,7 +65,7 @@ export const BaseEntitySchema = z.object({
   image_required: z.boolean(),
   item_url: z.string().optional(),
   tags: z.array(z.string()),
-  changelog: z.array(z.any()).optional(),
+
   last_modified: z.string().optional(),
 });
 

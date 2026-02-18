@@ -8,6 +8,7 @@ import Fuse from 'fuse.js';
 let cachedData: AllData | null = null;
 let fuseIndex: Fuse<any> | null = null;
 let allEntities: any[] = [];
+const entityMap: Map<string, any> = new Map();
 
 /**
  * Fetches data from the configured API URL and caches it.
@@ -47,6 +48,14 @@ export const fetchData = async (forceRefresh: boolean = false): Promise<AllData>
       ...cachedData.consumables,
     ];
 
+    // Populate HashMap for O(1) lookup
+    entityMap.clear();
+    allEntities.forEach((entity) => {
+      if (entity.name) {
+        entityMap.set(entity.name.toLowerCase(), entity);
+      }
+    });
+
     fuseIndex = new Fuse(allEntities, {
       keys: ['name'],
       threshold: 0.4,
@@ -80,7 +89,7 @@ export const getAllEntities = (): any[] => {
  * @returns The entity object if found, otherwise undefined.
  */
 export const findEntityByName = (name: string): any | undefined => {
-  return allEntities.find((entity) => entity.name.toLowerCase() === name.toLowerCase());
+  return entityMap.get(name.toLowerCase());
 };
 
 export const getData = (): AllData | null => {

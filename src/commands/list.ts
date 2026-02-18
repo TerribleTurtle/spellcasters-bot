@@ -7,7 +7,13 @@ import {
   ComponentType,
 } from 'discord.js';
 import { filterEntities } from '../services/api';
-import { createHeroEmbed, createUnitEmbed, createSpellEmbed, createTitanEmbed, createConsumableEmbed } from '../utils/embeds';
+import {
+  createHeroEmbed,
+  createUnitEmbed,
+  createSpellEmbed,
+  createTitanEmbed,
+  createConsumableEmbed,
+} from '../utils/embeds';
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -56,10 +62,7 @@ export const command = {
       option
         .setName('sort')
         .setDescription('Sort order (default: Name)')
-        .addChoices(
-          { name: 'Name (A-Z)', value: 'name' },
-          { name: 'Rank', value: 'rank' },
-        ),
+        .addChoices({ name: 'Name (A-Z)', value: 'name' }, { name: 'Rank', value: 'rank' }),
     ),
   async execute(interaction: ChatInputCommandInteraction) {
     const type = interaction.options.getString('type', true);
@@ -95,36 +98,49 @@ export const command = {
       const entity = entities[page];
       let embed;
       switch (entity.type) {
-        case 'Hero': embed = createHeroEmbed(entity); break;
-        case 'Unit': embed = createUnitEmbed(entity); break;
-        case 'Spell': embed = createSpellEmbed(entity); break;
-        case 'Titan': embed = createTitanEmbed(entity); break;
-        case 'Consumable': embed = createConsumableEmbed(entity); break;
-        default: embed = createUnitEmbed(entity);
+        case 'Hero':
+          embed = createHeroEmbed(entity);
+          break;
+        case 'Unit':
+          embed = createUnitEmbed(entity);
+          break;
+        case 'Spell':
+          embed = createSpellEmbed(entity);
+          break;
+        case 'Titan':
+          embed = createTitanEmbed(entity);
+          break;
+        case 'Consumable':
+          embed = createConsumableEmbed(entity);
+          break;
+        default:
+          embed = createUnitEmbed(entity);
       }
-      
-      embed.setFooter({ text: `Page ${page + 1}/${maxPages} | ${embed.data.footer?.text || ''}` });
-      
-      const row = new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId('prev')
-            .setLabel('◀️ Prev')
-            .setStyle(ButtonStyle.Primary)
-            .setDisabled(page === 0),
-          new ButtonBuilder()
-            .setCustomId('next')
-            .setLabel('Next ▶️')
-            .setStyle(ButtonStyle.Primary)
-            .setDisabled(page === maxPages - 1),
-        );
-        
+      const entityId = entity.entity_id || entity.name.toLowerCase().replace(/\s+/g, '_');
+      embed.setFooter({ text: `Page ${page + 1}/${maxPages} | ID: ${entityId}` });
+
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId('prev')
+          .setLabel('◀️ Prev')
+          .setStyle(ButtonStyle.Primary)
+          .setDisabled(page === 0),
+        new ButtonBuilder()
+          .setCustomId('next')
+          .setLabel('Next ▶️')
+          .setStyle(ButtonStyle.Primary)
+          .setDisabled(page === maxPages - 1),
+      );
+
       return { embeds: [embed], components: [row] };
     };
 
     const response = await interaction.editReply(generateResponse(currentPage));
 
-    const collector = response.createMessageComponentCollector({ componentType: ComponentType.Button, time: 120_000 });
+    const collector = response.createMessageComponentCollector({
+      componentType: ComponentType.Button,
+      time: 120_000,
+    });
 
     collector.on('collect', async (i) => {
       if (i.user.id !== interaction.user.id) {
@@ -143,11 +159,18 @@ export const command = {
 
     collector.on('end', async () => {
       // Disable buttons
-      const disabledRow = new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(
-            new ButtonBuilder().setCustomId('prev').setLabel('◀️ Prev').setStyle(ButtonStyle.Primary).setDisabled(true),
-            new ButtonBuilder().setCustomId('next').setLabel('Next ▶️').setStyle(ButtonStyle.Primary).setDisabled(true),
-        );
+      const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId('prev')
+          .setLabel('◀️ Prev')
+          .setStyle(ButtonStyle.Primary)
+          .setDisabled(true),
+        new ButtonBuilder()
+          .setCustomId('next')
+          .setLabel('Next ▶️')
+          .setStyle(ButtonStyle.Primary)
+          .setDisabled(true),
+      );
       await interaction.editReply({ components: [disabledRow] });
     });
   },

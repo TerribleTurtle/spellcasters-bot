@@ -41,11 +41,7 @@ export interface Ability {
   condition?: Condition;
 }
 
-export interface ChangelogEntry {
-  version: string;
-  date: string;
-  description: string;
-}
+
 
 export interface Upgrade {
   id: string;
@@ -78,7 +74,7 @@ export interface Hero {
     defense: Ability;
     ultimate: Ability;
   };
-  changelog?: ChangelogEntry[];
+
   description?: string;
   last_modified?: string;
 }
@@ -92,11 +88,11 @@ export interface BaseEntity {
   image_required: boolean;
   item_url?: string; // Derived from ID usually
   tags: string[];
-  changelog?: ChangelogEntry[];
+
   last_modified?: string;
 }
 
-// ... (Unit, Spell, Titan, Consumable use BaseEntity so they get ChangelogEntry)
+
 
 export interface AllData {
   build_info: BuildInfo;

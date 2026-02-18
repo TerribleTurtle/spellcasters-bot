@@ -10,7 +10,6 @@ export const config = {
   DATA_URL:
     process.env.DATA_URL ||
     'https://terribleturtle.github.io/spellcasters-community-api/api/v2/all_data.json',
-  GUILD_ID: process.env.GUILD_ID,
   ERROR_WEBHOOK_URL: process.env.ERROR_WEBHOOK_URL,
 };
 

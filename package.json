@@ -7,7 +7,7 @@
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
     "build": "tsc",
-    "pack": "powershell -Command \"if (Test-Path spellcasters-bot-v2.zip) { Remove-Item spellcasters-bot-v2.zip }; Compress-Archive -Path src,package.json,package-lock.json,tsconfig.json,build_api.py,DEPLOYMENT.md,deploy.sh,.env.example,.prettierrc,eslint.config.mjs,scripts,data,README.md,LICENSE -DestinationPath spellcasters-bot-v2.zip\"",
+    "pack": "powershell -Command \"if (Test-Path spellcasters-bot-v2.zip) { Remove-Item spellcasters-bot-v2.zip }; Compress-Archive -Path dist,src,package.json,package-lock.json,tsconfig.json,build_api.py,DEPLOYMENT.md,deploy.sh,.env.example,.prettierrc,eslint.config.mjs,scripts,data,README.md,LICENSE -DestinationPath spellcasters-bot-v2.zip\"",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write .",
