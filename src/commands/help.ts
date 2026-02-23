@@ -1,11 +1,16 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { COLORS } from '../constants';
 
 export const command = {
   data: new SlashCommandBuilder().setName('help').setDescription('Show all available commands'),
+  /**
+   * Executes the command.
+   * @param interaction - The command interaction.
+   */
   async execute(interaction: ChatInputCommandInteraction) {
     const embed = new EmbedBuilder()
       .setTitle('📖 Spellcasters Bot — Commands')
-      .setColor(0x5865f2)
+      .setColor(COLORS.HELP_BLURPLE)
       .setDescription('Use these slash commands to explore the world of Spellcasters.')
       .addFields(
         {
@@ -36,6 +41,10 @@ export const command = {
         {
           name: '📖 /help',
           value: 'Show this command list.',
+        },
+        {
+          name: '🔄 /refresh',
+          value: 'Force refresh database caching (Manage Guild only).',
         },
       )
       .setFooter({ text: 'Tip: All name fields support autocomplete — just start typing!' });

@@ -1,93 +1,106 @@
 import { EmbedBuilder } from 'discord.js';
-import { Hero, Unit, Spell, Titan, Consumable } from '../types';
+import { Entity, Hero, Unit, Spell, Titan, Consumable } from '../types';
+import { URLS, UI, COLORS, EMOJIS, safeStr as safe } from '../constants';
 
-const WIKI_BASE_URL = 'https://www.spellcastersdb.com';
-const IMAGE_BASE_URL = 'https://terribleturtle.github.io/spellcasters-community-api/assets';
+// --- Private Helpers ---
 
-/** Safely format a value for an embed field. Returns 'N/A' for null/undefined/empty. */
-const safe = (val: any, suffix = ''): string => {
-  if (val === null || val === undefined || val === '') return 'N/A';
-  return `${val}${suffix}`;
-};
-
-const getEntityId = (entity: any): string => {
+const getEntityId = (entity: { entity_id?: string; name: string }): string => {
   return entity.entity_id || entity.name.toLowerCase().replace(/\s+/g, '_');
 };
 
+const WIKI_PATHS: Record<string, string> = {
+  hero: 'spellcasters',
+  unit: 'incantations/units',
+  spell: 'incantations/spells',
+  titan: 'titans',
+  consumable: 'consumables',
+};
+
 const getWikiUrl = (type: string, id: string): string => {
-  switch (type) {
-    case 'hero':
-      return `${WIKI_BASE_URL}/spellcasters/${id}`;
-    case 'unit':
-      return `${WIKI_BASE_URL}/incantations/units/${id}`;
-    case 'spell':
-      return `${WIKI_BASE_URL}/incantations/spells/${id}`;
-    case 'titan':
-      return `${WIKI_BASE_URL}/titans/${id}`;
-    case 'consumable':
-      return `${WIKI_BASE_URL}/consumables/${id}`;
-    default:
-      return WIKI_BASE_URL;
-  }
+  const path = WIKI_PATHS[type];
+  return path ? `${URLS.WIKI_BASE}/${path}/${id}` : URLS.WIKI_BASE;
 };
 
 const getImageUrl = (type: string, id: string): string => {
-  // Directory names often correspond to plural types, but let's map them explicitly based on repo structure
-  // Repo structure from plan: heroes, units, spells, titans (and assumed consumables?)
-  // Actually consumables images might be in 'items' or 'consumables'. The user didn't specifying checking,
-  // but plan says 'img/consumables/{id}.png'. I'll stick to plan.
+  const dir = type === 'hero' ? 'heroes' : type + 's';
+  return `${URLS.IMAGE_BASE}/${dir}/${id}.png`;
+};
 
-  let dir = type + 's';
-  if (type === 'hero') dir = 'heroes'; // "heroes" is plural of hero
-
-  return `${IMAGE_BASE_URL}/${dir}/${id}.png`;
+const SCHOOL_COLORS: Record<string, number> = {
+  Astral: COLORS.ASTRAL,
+  War: COLORS.WAR,
+  Elemental: COLORS.ELEMENTAL,
+  Holy: COLORS.HOLY,
+  Necromancy: COLORS.NECROMANCY,
+  Wild: COLORS.WILD,
+  Technomancy: COLORS.TECHNOMANCY,
+  Titan: COLORS.TITAN,
 };
 
 const getSchoolColor = (school: string | undefined): number => {
-  switch (school) {
-    case 'Astral':
-      return 0x2e86c1;
-    case 'War':
-      return 0xc0392b;
-    case 'Elemental':
-      return 0xf39c12;
-    case 'Holy':
-      return 0xf1c40f;
-    case 'Necromancy':
-      return 0x8e44ad;
-    case 'Wild':
-      return 0x27ae60;
-    case 'Technomancy':
-      return 0x7f8c8d;
-    case 'Titan':
-      return 0xe74c3c;
-    default:
-      return 0x0099ff; // Default Blue
-  }
+  return (school && SCHOOL_COLORS[school]) || COLORS.DEFAULT_BLUE;
 };
-
-const FOOTER_TEXT = 'View on SpellcastersDB';
 
 const getDifficultyStars = (difficulty: number | undefined): string => {
   if (!difficulty || difficulty <= 0) return 'N/A';
   return '⭐'.repeat(Math.min(difficulty, 5));
 };
 
+const getCostString = (entity: {
+  charges: number;
+  recharge_time: number;
+  cast_time?: number;
+}): string => {
+  const parts = [
+    `Charges: ${safe(entity.charges)}`,
+    `Recharge: ${safe(entity.recharge_time, 's')}`,
+  ];
+  if (entity.cast_time && entity.cast_time > 0) parts.push(`Cast: ${entity.cast_time}s`);
+  return parts.join(' | ');
+};
+
+// --- Base Embed Builder ---
+
+/**
+ * Creates a pre-configured EmbedBuilder with standard Title, Description,
+ * Color, URL, Thumbnail, and Footer shared by all entity types.
+ */
+const createBaseEmbed = (
+  entity: Entity,
+  type: string,
+  emojiPrefix: string,
+  color: number,
+): EmbedBuilder => {
+  const id = getEntityId(entity);
+  return new EmbedBuilder()
+    .setTitle(`${emojiPrefix} ${entity.name}`)
+    .setDescription(entity.description || 'No description provided.')
+    .setColor(color)
+    .setURL(getWikiUrl(type, id))
+    .setThumbnail(getImageUrl(type, id))
+    .setFooter({ text: `${UI.FOOTER_TEXT} | ID: ${id}` });
+};
+
+// --- Type-Specific Embed Builders ---
+
+/**
+ * Creates an EmbedBuilder customized for a Hero entity.
+ * @param hero - The Hero entity to display.
+ * @returns A fully configured Discord EmbedBuilder.
+ */
 export const createHeroEmbed = (hero: Hero): EmbedBuilder => {
-  const embed = new EmbedBuilder()
-    .setTitle(hero.name)
-    .setDescription(hero.description || 'No description provided.')
-    .setColor(0x0099ff);
+  // Heroes use class-based color, but there's no magic_school — use default blue
+  const embed = createBaseEmbed(hero as Entity, 'hero', EMOJIS.Hero || '🧙', COLORS.DEFAULT_BLUE);
 
-  const id = getEntityId(hero);
-  embed.setURL(getWikiUrl('hero', id));
-  embed.setThumbnail(getImageUrl('hero', id));
-  embed.setFooter({ text: `${FOOTER_TEXT} | ID: ${id}` });
-
+  // Identity
   embed.addFields(
     { name: '🎓 Class', value: safe(hero.class), inline: true },
     { name: '📂 Category', value: safe(hero.category), inline: true },
     { name: '⭐ Difficulty', value: getDifficultyStars(hero.difficulty), inline: true },
+  );
+
+  // Stats
+  embed.addFields(
     { name: '❤️ Health', value: safe(hero.health), inline: true },
     { name: '👥 Population', value: safe(hero.population), inline: true },
     { name: '🦶 Movement', value: safe(hero.movement_type), inline: true },
@@ -137,22 +150,29 @@ export const createHeroEmbed = (hero: Hero): EmbedBuilder => {
   return embed;
 };
 
+/**
+ * Creates an EmbedBuilder customized for a Unit entity (including Buildings).
+ * @param unit - The Unit entity to display.
+ * @returns A fully configured Discord EmbedBuilder.
+ */
 export const createUnitEmbed = (unit: Unit): EmbedBuilder => {
-  const categoryEmoji = unit.category === 'Building' ? '🏗️' : '🐾';
-  const embed = new EmbedBuilder()
-    .setTitle(`${categoryEmoji} ${unit.name}`)
-    .setDescription(unit.description || 'No description provided.')
-    .setColor(getSchoolColor(unit.magic_school));
+  const categoryEmoji = unit.category === 'Building' ? '🏗️' : EMOJIS.Unit || '🐾';
+  const embed = createBaseEmbed(
+    unit as Entity,
+    'unit',
+    categoryEmoji,
+    getSchoolColor(unit.magic_school),
+  );
 
-  const id = getEntityId(unit);
-  embed.setURL(getWikiUrl('unit', id));
-  embed.setThumbnail(getImageUrl('unit', id));
-  embed.setFooter({ text: `${FOOTER_TEXT} | ID: ${id}` });
-
+  // Identity
   embed.addFields(
     { name: '🏅 Rank', value: safe(unit.rank), inline: true },
     { name: '🔮 School', value: safe(unit.magic_school), inline: true },
     { name: '📂 Type', value: safe(unit.category), inline: true },
+  );
+
+  // Combat
+  embed.addFields(
     { name: '❤️ Health', value: safe(unit.health), inline: true },
     { name: '⚔️ Damage', value: safe(unit.damage), inline: true },
     { name: '⚔️ DPS', value: safe(unit.dps), inline: true },
@@ -167,11 +187,8 @@ export const createUnitEmbed = (unit: Unit): EmbedBuilder => {
     embed.addFields({ name: '🎯 Range', value: safe(unit.range), inline: true });
   }
 
-  const cost = [`Charges: ${safe(unit.charges)}`, `Recharge: ${safe(unit.recharge_time, 's')}`];
-  if (unit.cast_time && unit.cast_time > 0) cost.push(`Cast: ${unit.cast_time}s`);
-  embed.addFields({ name: '💎 Cost', value: cost.join(' | '), inline: false });
+  embed.addFields({ name: '💎 Cost', value: getCostString(unit), inline: false });
 
-  // Mechanics Summary
   if (unit.mechanics) {
     const mechs: string[] = [];
     if (unit.mechanics.spawner) mechs.push('Spawner');
@@ -186,16 +203,18 @@ export const createUnitEmbed = (unit: Unit): EmbedBuilder => {
   return embed;
 };
 
+/**
+ * Creates an EmbedBuilder customized for a Spell entity.
+ * @param spell - The Spell entity to display.
+ * @returns A fully configured Discord EmbedBuilder.
+ */
 export const createSpellEmbed = (spell: Spell): EmbedBuilder => {
-  const embed = new EmbedBuilder()
-    .setTitle(`📜 ${spell.name}`)
-    .setDescription(spell.description || 'No description provided.')
-    .setColor(getSchoolColor(spell.magic_school));
-
-  const id = getEntityId(spell);
-  embed.setURL(getWikiUrl('spell', id));
-  embed.setThumbnail(getImageUrl('spell', id));
-  embed.setFooter({ text: `${FOOTER_TEXT} | ID: ${id}` });
+  const embed = createBaseEmbed(
+    spell as Entity,
+    'spell',
+    EMOJIS.Spell || '📜',
+    getSchoolColor(spell.magic_school),
+  );
 
   embed.addFields(
     { name: '🏅 Rank', value: safe(spell.rank), inline: true },
@@ -210,9 +229,7 @@ export const createSpellEmbed = (spell: Spell): EmbedBuilder => {
   if (spell.duration)
     embed.addFields({ name: '⏳ Duration', value: safe(spell.duration, 's'), inline: true });
 
-  const cost = [`Charges: ${safe(spell.charges)}`, `Recharge: ${safe(spell.recharge_time, 's')}`];
-  if (spell.cast_time && spell.cast_time > 0) cost.push(`Cast: ${spell.cast_time}s`);
-  embed.addFields({ name: '💎 Cost', value: cost.join(' | '), inline: false });
+  embed.addFields({ name: '💎 Cost', value: getCostString(spell), inline: false });
 
   if (spell.mechanics) {
     const details = [];
@@ -225,29 +242,34 @@ export const createSpellEmbed = (spell: Spell): EmbedBuilder => {
   return embed;
 };
 
+/**
+ * Creates an EmbedBuilder customized for a Titan entity.
+ * @param titan - The Titan entity to display.
+ * @returns A fully configured Discord EmbedBuilder.
+ */
 export const createTitanEmbed = (titan: Titan): EmbedBuilder => {
-  const embed = new EmbedBuilder()
-    .setTitle(`🗿 ${titan.name}`)
-    .setDescription(titan.description || 'No description provided.')
-    .setColor(getSchoolColor(titan.magic_school));
+  const embed = createBaseEmbed(
+    titan as Entity,
+    'titan',
+    EMOJIS.Titan || '🗿',
+    getSchoolColor(titan.magic_school),
+  );
 
-  const id = getEntityId(titan);
-  embed.setURL(getWikiUrl('titan', id));
-  embed.setThumbnail(getImageUrl('titan', id));
-  embed.setFooter({ text: `${FOOTER_TEXT} | ID: ${id}` });
-
+  // Identity
   embed.addFields(
     { name: '🏅 Rank', value: safe(titan.rank), inline: true },
     { name: '🔮 School', value: safe(titan.magic_school), inline: true },
     { name: '❤️ Health', value: safe(titan.health), inline: true },
+  );
+
+  // Combat
+  embed.addFields(
     { name: '⚔️ Damage', value: safe(titan.damage), inline: true },
     { name: '⚔️ DPS', value: safe(titan.dps), inline: true },
     { name: '🌪️ Speed', value: safe(titan.movement_speed), inline: true },
   );
 
-  const cost = [`Charges: ${safe(titan.charges)}`, `Recharge: ${safe(titan.recharge_time, 's')}`];
-  if (titan.cast_time && titan.cast_time > 0) cost.push(`Cast: ${titan.cast_time}s`);
-  embed.addFields({ name: '💎 Cost', value: cost.join(' | '), inline: false });
+  embed.addFields({ name: '💎 Cost', value: getCostString(titan), inline: false });
 
   if (titan.passive_health_regen)
     embed.addFields({
@@ -262,7 +284,12 @@ export const createTitanEmbed = (titan: Titan): EmbedBuilder => {
     if (titan.mechanics.aura) {
       embed.addFields({
         name: 'Aura',
-        value: titan.mechanics.aura.map((a: any) => `**${a.name}**: ${a.description}`).join('\n'),
+        value: titan.mechanics.aura
+          .map((a: unknown) => {
+            const aura = a as { name?: string; description?: string };
+            return `**${aura.name || 'Unknown'}**: ${aura.description || ''}`;
+          })
+          .join('\n'),
       });
     }
     if (titan.mechanics.auto_capture_altars) {
@@ -272,21 +299,23 @@ export const createTitanEmbed = (titan: Titan): EmbedBuilder => {
   return embed;
 };
 
+/**
+ * Creates an EmbedBuilder customized for a Consumable entity.
+ * @param consumable - The Consumable entity to display.
+ * @returns A fully configured Discord EmbedBuilder.
+ */
 export const createConsumableEmbed = (consumable: Consumable): EmbedBuilder => {
   let typeLabel = consumable.effect_type;
   if (consumable.effect_type === 'Charge_Refill') typeLabel = '⚡ Charge Refill';
   if (consumable.effect_type === 'Heal') typeLabel = '💚 Heal';
   if (consumable.effect_type === 'Buff') typeLabel = '🔮 Buff';
 
-  const embed = new EmbedBuilder()
-    .setTitle(`💊 ${consumable.name}`)
-    .setDescription(consumable.description || 'No description provided.')
-    .setColor(0x00ff00);
-
-  const id = getEntityId(consumable);
-  embed.setURL(getWikiUrl('consumable', id));
-  embed.setThumbnail(getImageUrl('consumable', id));
-  embed.setFooter({ text: `${FOOTER_TEXT} | ID: ${id}` });
+  const embed = createBaseEmbed(
+    consumable as Entity,
+    'consumable',
+    EMOJIS.Consumable || '💊',
+    COLORS.CONSUMABLE_GREEN,
+  );
 
   embed.addFields(
     { name: '✨ Effect', value: safe(typeLabel), inline: true },
@@ -308,4 +337,38 @@ export const createConsumableEmbed = (consumable: Consumable): EmbedBuilder => {
   }
 
   return embed;
+};
+
+/**
+ * Generic dispatch function that creates the appropriate EmbedBuilder
+ * based on the provided Entity's discriminant `type`.
+ * @param entity - Any valid Entity object (Hero, Unit, Spell, Titan, Consumable).
+ * @returns A fully configured Discord EmbedBuilder for that entity.
+ */
+export const createEntityEmbed = (entity: Entity): EmbedBuilder => {
+  switch (entity.type) {
+    case 'Hero':
+      return createHeroEmbed(entity);
+    case 'Unit':
+      return createUnitEmbed(entity);
+    case 'Spell':
+      return createSpellEmbed(entity);
+    case 'Titan':
+      return createTitanEmbed(entity);
+    case 'Consumable':
+      return createConsumableEmbed(entity);
+    default:
+      // Fallback, should never be hit if Entity union is exhaustive
+      return createUnitEmbed(entity as unknown as Unit);
+  }
+};
+
+/**
+ * Creates a standardized error embed for failed operations.
+ * @param message - The error message to display.
+ * @returns A red-colored Discord EmbedBuilder with the error message.
+ */
+export const createErrorEmbed = (message: string): EmbedBuilder => {
+  const prefix = message.startsWith('❌') ? '' : '❌ ';
+  return new EmbedBuilder().setDescription(`${prefix}${message}`).setColor(COLORS.ERROR_RED);
 };

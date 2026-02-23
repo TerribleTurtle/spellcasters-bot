@@ -1,5 +1,12 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  ChatInputCommandInteraction,
+  AutocompleteInteraction,
+  EmbedBuilder,
+} from 'discord.js';
 import { patches } from '../data/patches';
+import { COLORS } from '../constants';
+import { createErrorEmbed } from '../utils/embeds';
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -12,7 +19,11 @@ export const command = {
         .setRequired(false)
         .setAutocomplete(true),
     ),
-  async autocomplete(interaction: any) {
+  /**
+   * Handles autocomplete choices.
+   * @param interaction - The autocomplete interaction.
+   */
+  async autocomplete(interaction: AutocompleteInteraction) {
     const focusedValue = interaction.options.getFocused();
     const filtered = patches
       .filter((p) => p.version.includes(focusedValue))
@@ -21,6 +32,10 @@ export const command = {
 
     await interaction.respond(filtered);
   },
+  /**
+   * Executes the command.
+   * @param interaction - The command interaction.
+   */
   async execute(interaction: ChatInputCommandInteraction) {
     const version = interaction.options.getString('version');
 
@@ -29,7 +44,7 @@ export const command = {
 
     if (!patch) {
       await interaction.reply({
-        content: `❌ Patch version **${version}** not found.`,
+        embeds: [createErrorEmbed(`Patch version **${version}** not found.`)],
         ephemeral: true,
       });
       return;
@@ -38,7 +53,7 @@ export const command = {
     const embed = new EmbedBuilder()
       .setTitle(`📜 Patch Notes: v${patch.version}`)
       .setDescription(`**${patch.title}**\n*${patch.date}* — ${patch.type}\n\n${patch.description}`)
-      .setColor(patch.type === 'Hotfix' ? 0xff0000 : 0x0099ff);
+      .setColor(patch.type === 'Hotfix' ? COLORS.ERROR_RED : COLORS.DEFAULT_BLUE);
 
     if (patch.changes.length > 0) {
       const changeLines = patch.changes.map((c) => {

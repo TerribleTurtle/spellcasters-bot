@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+/** Validates condition rules/requirements for abilities. */
 export const ConditionSchema = z.object({
   field: z.string(),
   operator: z.string(),
@@ -7,19 +8,25 @@ export const ConditionSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const MechanicsSchema = z.object({
-  features: z.array(z.any()).optional(), // Legacy features or remaining ones
-  pierce: z.boolean().optional(),
-  stealth: z.object({
-    duration: z.number().optional(),
-    notes: z.string().optional(),
-  }).optional(),
-  cleave: z.boolean().optional(),
-  homing: z.boolean().optional(),
-  knockback: z.boolean().optional(),
-  interruption: z.boolean().optional(),
-}).catchall(z.any()); // Allow other mechanics keys
+/** Validates complex spell/hero mechanics like stealth, pierce, and status effects. */
+export const MechanicsSchema = z
+  .object({
+    features: z.array(z.any()).optional(), // Legacy features or remaining ones
+    pierce: z.boolean().optional(),
+    stealth: z
+      .object({
+        duration: z.number().optional(),
+        notes: z.string().optional(),
+      })
+      .optional(),
+    cleave: z.boolean().optional(),
+    homing: z.boolean().optional(),
+    knockback: z.boolean().optional(),
+    interruption: z.boolean().optional(),
+  })
+  .catchall(z.any()); // Allow other mechanics keys
 
+/** Validates individual abilities (passive, primary, defense, ultimate). */
 export const AbilitySchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -32,8 +39,10 @@ export const AbilitySchema = z.object({
   condition: ConditionSchema.optional(),
 });
 
+/** Validates a Hero entity from the community API. */
 export const HeroSchema = z.object({
   $schema: z.string().optional(),
+  type: z.string().optional(),
   entity_id: z.string().optional(),
   name: z.string(),
   class: z.string(),
@@ -56,8 +65,10 @@ export const HeroSchema = z.object({
   last_modified: z.string().optional(),
 });
 
+/** Base schema fields shared by all game entities. */
 export const BaseEntitySchema = z.object({
   $schema: z.string().optional(),
+  type: z.string().optional(),
   entity_id: z.string(),
   name: z.string(),
   category: z.string(),
@@ -69,6 +80,7 @@ export const BaseEntitySchema = z.object({
   last_modified: z.string().optional(),
 });
 
+/** Validates a Unit (or Building) entity. */
 export const UnitSchema = BaseEntitySchema.extend({
   magic_school: z.string(),
   rank: z.string(),
@@ -86,6 +98,7 @@ export const UnitSchema = BaseEntitySchema.extend({
   mechanics: MechanicsSchema.optional(),
 });
 
+/** Validates a Spell (Incantation) entity. */
 export const SpellSchema = BaseEntitySchema.extend({
   magic_school: z.string(),
   rank: z.string(),
@@ -99,6 +112,7 @@ export const SpellSchema = BaseEntitySchema.extend({
   mechanics: MechanicsSchema.optional(),
 });
 
+/** Validates a Titan entity. */
 export const TitanSchema = BaseEntitySchema.extend({
   magic_school: z.string(),
   rank: z.string(),
@@ -116,6 +130,7 @@ export const TitanSchema = BaseEntitySchema.extend({
   mechanics: z.record(z.string(), z.any()).optional(),
 });
 
+/** Validates a Consumable entity. */
 export const ConsumableSchema = BaseEntitySchema.extend({
   effect_type: z.string(),
   value: z.number(),
@@ -124,11 +139,13 @@ export const ConsumableSchema = BaseEntitySchema.extend({
   stack_size: z.number().optional(),
 });
 
+/** Validates the metadata describing the dataset version and creation time. */
 export const BuildInfoSchema = z.object({
   version: z.string(),
   generated_at: z.string(),
 });
 
+/** Root schema validating the entire Community API JSON response. */
 export const AllDataSchema = z.object({
   build_info: BuildInfoSchema,
   heroes: z.array(HeroSchema),

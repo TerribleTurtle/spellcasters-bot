@@ -1,6 +1,9 @@
 import axios from 'axios';
 import { EmbedBuilder } from 'discord.js';
 import { config } from '../config';
+import { COLORS } from '../constants';
+
+const MAX_STACK_TRACE_LENGTH = 4000;
 
 /**
  * Logs an error to console and optionally to a Discord webhook.
@@ -19,11 +22,11 @@ export const logError = async (context: string, error: unknown) => {
 
     // Discord embed limits: Title 256, Description 4096.
     // We'll put the stack in a code block description, truncated if needed.
-    const description = `\`\`\`js\n${stack?.slice(0, 4000) || 'No stack trace'}\n\`\`\``;
+    const description = `\`\`\`js\n${stack?.slice(0, MAX_STACK_TRACE_LENGTH) || 'No stack trace'}\n\`\`\``;
 
     const embed = new EmbedBuilder()
       .setTitle(`🚨 Error in ${context}`)
-      .setColor(0xff0000)
+      .setColor(COLORS.ERROR_RED)
       .addFields({ name: 'Message', value: errorMessage })
       .setDescription(description)
       .setTimestamp();

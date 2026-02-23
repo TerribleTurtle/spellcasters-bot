@@ -7,13 +7,9 @@ import {
   ComponentType,
 } from 'discord.js';
 import { filterEntities } from '../services/api';
-import {
-  createHeroEmbed,
-  createUnitEmbed,
-  createSpellEmbed,
-  createTitanEmbed,
-  createConsumableEmbed,
-} from '../utils/embeds';
+import { createEntityEmbed, createErrorEmbed } from '../utils/embeds';
+import { Entity, hasRank } from '../types';
+import { RANK_ORDER, PAGINATION_TIMEOUT_MS } from '../constants';
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -64,6 +60,10 @@ export const command = {
         .setDescription('Sort order (default: Name)')
         .addChoices({ name: 'Name (A-Z)', value: 'name' }, { name: 'Rank', value: 'rank' }),
     ),
+  /**
+   * Executes the command.
+   * @param interaction - The command interaction.
+   */
   async execute(interaction: ChatInputCommandInteraction) {
     const type = interaction.options.getString('type', true);
     const school = interaction.options.getString('school');
@@ -75,20 +75,21 @@ export const command = {
     const entities = await filterEntities(type, school || undefined, rank || undefined);
 
     if (entities.length === 0) {
-      await interaction.editReply('❌ No entities found matching your filters.');
+      await interaction.editReply({
+        embeds: [createErrorEmbed('No entities found matching your filters.')],
+      });
       return;
     }
 
     // Sort results
-    const rankOrder: Record<string, number> = { I: 1, II: 2, III: 3, IV: 4, V: 5 };
     if (sort === 'rank') {
-      entities.sort((a: any, b: any) => {
-        const ra = rankOrder[a.rank] ?? 99;
-        const rb = rankOrder[b.rank] ?? 99;
+      entities.sort((a: Entity, b: Entity) => {
+        const ra = hasRank(a) && RANK_ORDER[a.rank] ? RANK_ORDER[a.rank] : 99;
+        const rb = hasRank(b) && RANK_ORDER[b.rank] ? RANK_ORDER[b.rank] : 99;
         return ra !== rb ? ra - rb : a.name.localeCompare(b.name);
       });
     } else {
-      entities.sort((a: any, b: any) => a.name.localeCompare(b.name));
+      entities.sort((a: Entity, b: Entity) => a.name.localeCompare(b.name));
     }
 
     let currentPage = 0;
@@ -96,26 +97,7 @@ export const command = {
 
     const generateResponse = (page: number) => {
       const entity = entities[page];
-      let embed;
-      switch (entity.type) {
-        case 'Hero':
-          embed = createHeroEmbed(entity);
-          break;
-        case 'Unit':
-          embed = createUnitEmbed(entity);
-          break;
-        case 'Spell':
-          embed = createSpellEmbed(entity);
-          break;
-        case 'Titan':
-          embed = createTitanEmbed(entity);
-          break;
-        case 'Consumable':
-          embed = createConsumableEmbed(entity);
-          break;
-        default:
-          embed = createUnitEmbed(entity);
-      }
+      const embed = createEntityEmbed(entity);
       const entityId = entity.entity_id || entity.name.toLowerCase().replace(/\s+/g, '_');
       embed.setFooter({ text: `Page ${page + 1}/${maxPages} | ID: ${entityId}` });
 
@@ -139,7 +121,7 @@ export const command = {
 
     const collector = response.createMessageComponentCollector({
       componentType: ComponentType.Button,
-      time: 120_000,
+      time: PAGINATION_TIMEOUT_MS,
     });
 
     collector.on('collect', async (i) => {
@@ -158,20 +140,24 @@ export const command = {
     });
 
     collector.on('end', async () => {
-      // Disable buttons
-      const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId('prev')
-          .setLabel('◀️ Prev')
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(true),
-        new ButtonBuilder()
-          .setCustomId('next')
-          .setLabel('Next ▶️')
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(true),
-      );
-      await interaction.editReply({ components: [disabledRow] });
+      try {
+        // Disable buttons
+        const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId('prev')
+            .setLabel('◀️ Prev')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true),
+          new ButtonBuilder()
+            .setCustomId('next')
+            .setLabel('Next ▶️')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true),
+        );
+        await interaction.editReply({ components: [disabledRow] });
+      } catch (error) {
+        console.error('Failed to update list buttons on end, message might be deleted.', error);
+      }
     });
   },
 };

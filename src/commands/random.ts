@@ -1,12 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { getRandomEntity } from '../services/api';
-import {
-  createHeroEmbed,
-  createUnitEmbed,
-  createSpellEmbed,
-  createTitanEmbed,
-  createConsumableEmbed,
-} from '../utils/embeds';
+import { createEntityEmbed, createErrorEmbed } from '../utils/embeds';
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -24,6 +18,10 @@ export const command = {
           { name: 'Consumable', value: 'Consumable' },
         ),
     ),
+  /**
+   * Executes the command.
+   * @param interaction - The command interaction.
+   */
   async execute(interaction: ChatInputCommandInteraction) {
     const type = interaction.options.getString('type');
     await interaction.deferReply();
@@ -31,30 +29,11 @@ export const command = {
     const entity = await getRandomEntity(type || undefined);
 
     if (!entity) {
-      await interaction.editReply('❌ No entities found.');
+      await interaction.editReply({ embeds: [createErrorEmbed('No entities found.')] });
       return;
     }
 
-    let embed;
-    switch (entity.type) {
-      case 'Hero':
-        embed = createHeroEmbed(entity);
-        break;
-      case 'Unit':
-        embed = createUnitEmbed(entity);
-        break;
-      case 'Spell':
-        embed = createSpellEmbed(entity);
-        break;
-      case 'Titan':
-        embed = createTitanEmbed(entity);
-        break;
-      case 'Consumable':
-        embed = createConsumableEmbed(entity);
-        break;
-      default:
-        embed = createUnitEmbed(entity);
-    }
+    const embed = createEntityEmbed(entity);
 
     await interaction.editReply({ content: `🎲 **Random ${entity.type}**`, embeds: [embed] });
   },

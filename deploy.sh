@@ -55,11 +55,13 @@ cd "$TARGET_DIR"
 if [ -d "dist" ] && [ -f "dist/index.js" ]; then
     echo "📦 Found pre-built artifacts. Installing production dependencies only..."
     # Faster and uses less memory than npm install
-    npm ci --omit=dev
+    export npm_config_update_notifier=false
+    npm ci --omit=dev --no-fund --no-audit
 else
     echo "🛠️  No pre-built artifacts found. Building from source..."
     echo "⚠️  WARNING: This operation is memory intensive."
-    npm install
+    export npm_config_update_notifier=false
+    npm install --no-fund --no-audit
     npm run build
 fi
 
@@ -70,7 +72,7 @@ node dist/deploy-commands.js
 
 # 9. Restart
 echo "▶️  Restarting bot..."
-pm2 restart spellcasters-bot --update-env --env production || pm2 start dist/index.js --name spellcasters-bot --time --env production
+pm2 restart spellcasters-bot || pm2 start dist/index.js --name spellcasters-bot --time
 
 # 10. Cleanup
 cd ..

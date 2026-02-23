@@ -1,11 +1,17 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { getStats } from '../services/stats';
 import { getAllEntities } from '../services/api';
+import { COLORS } from '../constants';
+import pkg from '../../package.json';
 
 export const command = {
   data: new SlashCommandBuilder()
     .setName('about')
     .setDescription('Game info, bot stats, and invite link'),
+  /**
+   * Executes the command.
+   * @param interaction - The command interaction.
+   */
   async execute(interaction: ChatInputCommandInteraction) {
     const stats = getStats();
     const entities = getAllEntities();
@@ -20,7 +26,7 @@ export const command = {
 
     const embed = new EmbedBuilder()
       .setTitle('ℹ️ About Spellcasters Bot')
-      .setColor(0x9b59b6)
+      .setColor(COLORS.ABOUT_PURPLE)
       .setDescription(
         'The official community bot for **Spellcasters Chronicles**.\nData provided by the [Community API v2](https://terribleturtle.github.io/spellcasters-community-api/).',
       )
@@ -36,7 +42,7 @@ export const command = {
           inline: false,
         },
       )
-      .setFooter({ text: `v2.1.0 | Powered by Spellcasters API` });
+      .setFooter({ text: `v${pkg.version} | Powered by Spellcasters API` });
 
     await interaction.reply({ embeds: [embed] });
   },

@@ -23,7 +23,7 @@ A Discord bot for looking up Heroes, Units, Spells, Titans, and Consumables from
 
 ### Prerequisites
 
-- Node.js v16+ (v20 Recommended)
+- Node.js v18+ (v20 Recommended)
 - npm
 
 ### Installation
@@ -40,15 +40,20 @@ A Discord bot for looking up Heroes, Units, Spells, Titans, and Consumables from
     DATA_URL=https://terribleturtle.github.io/spellcasters-community-api/api/v2/all_data.json
     # Optional: Webhook URL for error logging
     ERROR_WEBHOOK_URL=https://discord.com/api/webhooks/...
+
+    # Optional Bot Hardening
+    CACHE_TTL_HOURS=6
+    GUILD_ID=your_test_server_id_(optional)
+    NODE_ENV=development
     ```
 
-    Start the development server:
+4.  **Start the development server:**
 
     ```bash
     npm run dev
     ```
 
-4.  **Code Quality Tools**:
+5.  **Code Quality Tools**:
     - **Linting**: Check for errors:
       ```bash
       npm run lint
@@ -61,6 +66,14 @@ A Discord bot for looking up Heroes, Units, Spells, Titans, and Consumables from
       ```bash
       npm run validate
       ```
+    - **Testing**: Run the Vitest suite:
+      ```bash
+      npm run test
+      ```
+      Or watch mode for development:
+      ```bash
+      npm run test:watch
+      ```
 
 ### Building for Production
 
@@ -70,7 +83,17 @@ To build the TypeScript code to JavaScript:
 npm run build
 ```
 
-The output will be in the `dist/` directory.
+To run the production build:
+
+```bash
+npm run start
+```
+
+The output and entrypoint will be in the `dist/` directory.
+
+### Development Scripts 🛠️
+
+The repository includes a `scripts/` directory containing utility scripts (like `analyze_conditions.py` and `analyze_features.py`) used by maintainers to scan raw API data for edge cases and standardize schemas. These are not required to run the bot.
 
 ### Packaging for Deployment
 
@@ -85,7 +108,9 @@ This creates `spellcasters-bot-v2.zip` containing all source code, configs, and 
 ## Hosting
 
 Please refer to [DEPLOYMENT.md](DEPLOYMENT.md) for the official deployment guide.
-This project includes a `deploy.sh` script for automated updates on Google Cloud e2-micro instances. It automatically configures `NODE_ENV=production` for optimal performance.
+This project includes a `deploy.sh` script for automated updates on Google Cloud e2-micro instances. It respects the `NODE_ENV` configuration loaded from `.env`.
+
+See [active_state.md](active_state.md) for the internal project status and recent changelog milestones.
 
 ## 🌐 Part of the Spellcasters Ecosystem
 

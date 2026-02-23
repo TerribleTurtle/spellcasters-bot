@@ -5,7 +5,7 @@
 
 ## 1. Prerequisites
 
-- **Node.js:** v16.9.0+
+- **Node.js:** v18.0.0+
 - **PM2:** For process management (`npm install -g pm2`)
 - **Unzip:** Installed on server (`sudo apt install unzip`)
 
@@ -27,6 +27,10 @@ If this is a brand new server:
     ```env
     DISCORD_TOKEN=your_token_here
     DATA_URL=https://terribleturtle.github.io/spellcasters-community-api/api/v2/all_data.json
+    # ERROR_WEBHOOK_URL=your_webhook_url (optional)
+    # GUILD_ID=your_dev_server_id (optional)
+    CACHE_TTL_HOURS=6
+    NODE_ENV=production
     ```
 4.  **Run Deploy:**
     ```bash
@@ -41,7 +45,7 @@ On your development machine, run:
 npm run pack
 ```
 
-This creates `spellcasters-bot-v2.zip` with all necessary files (source, configs, scripts, data) while excluding `node_modules`, `dist`, and `.env` files.
+This creates `spellcasters-bot-v2.zip` with all necessary files (source, configs, scripts, data) while excluding `node_modules` and `.env` files.
 
 ## 4. Routine Updates (The Standard Process)
 

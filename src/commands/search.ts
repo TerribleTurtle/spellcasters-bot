@@ -4,14 +4,8 @@ import {
   AutocompleteInteraction,
 } from 'discord.js';
 import { fetchData, searchEntities, findEntityByName } from '../services/api';
-import {
-  createHeroEmbed,
-  createUnitEmbed,
-  createSpellEmbed,
-  createTitanEmbed,
-  createConsumableEmbed,
-} from '../utils/embeds';
-import { Hero, Unit, Spell, Titan, Consumable } from '../types';
+import { createEntityEmbed, createErrorEmbed } from '../utils/embeds';
+import { Entity } from '../types';
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -24,6 +18,10 @@ export const command = {
         .setRequired(true)
         .setAutocomplete(true),
     ),
+  /**
+   * Handles autocomplete choices.
+   * @param interaction - The autocomplete interaction.
+   */
   async autocomplete(interaction: AutocompleteInteraction) {
     const focusedValue = interaction.options.getFocused();
 
@@ -33,13 +31,17 @@ export const command = {
     // Use cached search
     const results = searchEntities(focusedValue);
 
-    const choices = results.slice(0, 25).map((choice: any) => ({
+    const choices = results.slice(0, 25).map((choice: Entity) => ({
       name: `${choice.name} (${choice.type})`,
       value: choice.name,
     }));
 
     await interaction.respond(choices);
   },
+  /**
+   * Executes the command.
+   * @param interaction - The command interaction.
+   */
   async execute(interaction: ChatInputCommandInteraction) {
     const query = interaction.options.getString('name', true);
 
@@ -52,27 +54,8 @@ export const command = {
     const exactMatch = findEntityByName(query);
 
     if (exactMatch) {
-      const type = exactMatch.type.toLowerCase();
-
-      switch (type) {
-        case 'hero':
-          await interaction.editReply({ embeds: [createHeroEmbed(exactMatch as Hero)] });
-          return;
-        case 'unit':
-          await interaction.editReply({ embeds: [createUnitEmbed(exactMatch as Unit)] });
-          return;
-        case 'spell':
-          await interaction.editReply({ embeds: [createSpellEmbed(exactMatch as Spell)] });
-          return;
-        case 'titan':
-          await interaction.editReply({ embeds: [createTitanEmbed(exactMatch as Titan)] });
-          return;
-        case 'consumable':
-          await interaction.editReply({
-            embeds: [createConsumableEmbed(exactMatch as Consumable)],
-          });
-          return;
-      }
+      await interaction.editReply({ embeds: [createEntityEmbed(exactMatch)] });
+      return;
     }
 
     // 2. Fuzzy Search Fallback
@@ -81,10 +64,16 @@ export const command = {
 
     if (bestMatch) {
       await interaction.editReply({
-        content: `❌ Entity "${query}" not found. Did you mean **${bestMatch.name}** (${bestMatch.type})?`,
+        embeds: [
+          createErrorEmbed(
+            `Entity "${query}" not found. Did you mean **${bestMatch.name}** (${bestMatch.type})?`,
+          ),
+        ],
       });
     } else {
-      await interaction.editReply({ content: `❌ No entity found matching "${query}".` });
+      await interaction.editReply({
+        embeds: [createErrorEmbed(`No entity found matching "${query}".`)],
+      });
     }
   },
 };

@@ -1,4 +1,3 @@
-
 export interface StatsSnapshot {
   uptimeSeconds: number;
   totalCommands: number;
